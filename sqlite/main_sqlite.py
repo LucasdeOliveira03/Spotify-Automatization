@@ -5,13 +5,17 @@ import os
 import sqlite3
 import datetime
 
+# Used variables
 idx = 0
 n = 0
 m = 0
 found = False
 con = sqlite3.connect("musicdb.db")
 cur = con.cursor()
-table = "musicsaver"
+
+table = "musicsaver" # Name your table
+playlist_id = "6OQdpxRYAHCpwJ3C6JmdIj" # Name your playlist
+
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
@@ -19,6 +23,7 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 SCOPE = 'user-library-read'
 
+# Connect spotify
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id = CLIENT_ID,
     client_secret = CLIENT_SECRET,
@@ -34,7 +39,8 @@ def CreateTable(table):
                 artist TEXT, 
                 album TEXT, 
                 date TEXT,
-                runtime TEXT)
+                runtime TEXT,
+                plussy TEXT) 
                 """)
 
 def GetLikedSongs(limit,offset):
@@ -56,7 +62,7 @@ def GetLikedSongs(limit,offset):
 
         print(f"{m + 1}. {Name} - {Artist} - {Album} - {Date} - {Id} - {RunTime}")
         
-        if (FetchDatabase(Id) == 0 ):
+        if (CompareDatabase(Id) == 0 ):
 
             InsertDatabase(Name,Artist,Album,Date,Id,RunTime)
 
@@ -71,7 +77,7 @@ def Total():
     total = results['total']
     return total
 
-def FetchDatabase(Id):
+def CompareDatabase(Id):
     cur.execute(f"""
                 SELECT * 
                 FROM {table} 
@@ -90,16 +96,36 @@ def InsertDatabase(Track,Artist,Album,Date,Id,RunTime):
     
     con.commit()
 
+def FetchDatabase():
+    cur.execute(f"""
+                SELECT *
+                FROM {table}
+                WHERE plussy IS NULL
+                """)
+
+    record = cur.fetchall()
+
+    return(record)
+
+def TrackUsed(Id):
+    cur.execute(f"""
+                UPDATE {table}
+                SET plussy = '*'
+                WHERE id = '{Id}'
+                """)
+    
+    con.commit()
 
 def Main():
     global n
     global found
 
+    # Create table if doesn't exist
     cur.execute(f"""
-    SELECT name 
-    FROM sqlite_master 
-    WHERE type='table' AND name='{table}'
-    """)
+                SELECT name 
+                FROM sqlite_master 
+                WHERE type='table' AND name='{table}'
+                """)
 
     if cur.fetchone():
         print(f"the table '{table}' already exist")
@@ -111,13 +137,26 @@ def Main():
         
         print(f"table '{table}' created")
 
+    # I can't remember how but it loops through all liked songs
     while n < Total():
         GetLikedSongs(limit = 50,offset = n)
 
         if found == True:
-            return
+            break
 
         n += 50
+
+    # Insert tracks into the playlist
+    record = FetchDatabase()
+
+    for track in record:
+        Id = track[0]
+        Track = track[1]
+
+        print(f"id = {Id} track = {Track}")
+        sp.playlist_add_items(playlist_id,[Id])
+
+        TrackUsed(Id)    
 
 if __name__=="__main__":
     Main()
