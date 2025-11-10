@@ -66,16 +66,13 @@ def GetLikedSongs(limit,offset):
 
             InsertDatabase(Name,Artist,Album,Date,Id,RunTime)
 
-        else:
-            found = True
-            return(found)
-
         m += 1
         
 def Total():
     results = sp.current_user_saved_tracks(limit = 1)
     total = results['total']
-    return total
+
+    return(total)
 
 def CompareDatabase(Id):
     cur.execute(f"""
@@ -120,6 +117,8 @@ def Main():
     global n
     global found
 
+    i = 1
+
     # Create table if doesn't exist
     cur.execute(f"""
                 SELECT name 
@@ -137,6 +136,9 @@ def Main():
         
         print(f"table '{table}' created")
 
+    record = FetchDatabase()
+    n = len(record)
+
     # I can't remember how but it loops through all liked songs
     while n < Total():
         GetLikedSongs(limit = 50,offset = n)
@@ -146,17 +148,17 @@ def Main():
 
         n += 50
 
-    # Insert tracks into the playlist
     record = FetchDatabase()
-
+    # Insert tracks into the playlist
     for track in record:
+        total = len(record)
         Id = track[0]
         Track = track[1]
 
-        print(f"id = {Id} track = {Track}")
+        print(f"id = {Id} track = {Track} - {i}/{total}")
         sp.playlist_add_items(playlist_id,[Id])
-
         TrackUsed(Id)    
+        i += 1
 
 if __name__=="__main__":
     Main()
