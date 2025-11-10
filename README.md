@@ -1,7 +1,7 @@
 
 # Spotify-Automatization
 
-Automatization on spotify because I lost to many liked songs (I'm a braindead)
+Automatization on spotify because I lost too many liked songs (I'm a braindead)
 
 ## Deployment
 
